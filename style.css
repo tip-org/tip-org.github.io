@@ -8,6 +8,16 @@ body {
    margin-left: 1em;
 }
 
+.bnfc>code {
+    line-height: 1.2em;
+    font-size: 0.7em;
+}
+
+code {
+    line-height: 1.5em;
+    font-size: 0.8em;
+}
+
 .content {
     margin: 0 auto;
     padding: 0 0.5em;
