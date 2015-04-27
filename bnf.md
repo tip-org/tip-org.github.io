@@ -76,6 +76,8 @@ Distinct.   Head ::= "distinct";
 IntAdd.     Head ::= "+";
 IntSub.     Head ::= "-";
 IntMul.     Head ::= "*";
+IntDiv.     Head ::= "div";
+IntMod.     Head ::= "mod";
 IntGt.      Head ::= ">";
 IntGe.      Head ::= ">=";
 IntLt.      Head ::= "<";
