@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="base-min.css" rel="stylesheet"/>
+<link href="style.css" rel="stylesheet"/>
+<title>TIP BNF</title>
+</head>
+<body>
+<div class="header">
+<h1>TIP BNF</h1>
+</div>
+<div class="content">
+<p>This document contains the BNF of the <a href="index.html">TIP</a> format, which is an extension of <a href="http://smt-lib.org">SMT-LIB</a> for expression inductive problems. The grammar is written in <a href="http://bnfc.digitalgrammars.com/">BNFC</a> syntax. The format is also decribed in <a href="format.html">prose</a> with examples.</p>
+<pre class="bnfc"><code>comment &quot;;&quot;;
+Start. Start ::= [Decl];
+
+[].  [Decl] ::= &quot;(&quot; &quot;check-sat&quot; &quot;)&quot;;
+(:). [Decl] ::= &quot;(&quot; Decl &quot;)&quot;  [Decl];
+
+DeclareDatatypes. Decl ::= &quot;declare-datatypes&quot; &quot;(&quot; [Symbol] &quot;)&quot; &quot;(&quot; [Datatype] &quot;)&quot;;
+DeclareSort.      Decl ::= &quot;declare-sort&quot; Symbol Integer;
+DeclareFun.       Decl ::= &quot;declare-fun&quot; FunDecl;
+DefineFunsRec.    Decl ::= &quot;define-funs-rec&quot; &quot;(&quot; [FunDef] &quot;)&quot; &quot;(&quot; [Expr] &quot;)&quot;;
+MonoAssert.       Decl ::= Assertion Expr;
+ParAssert.        Decl ::= Assertion &quot;(&quot; &quot;par&quot; &quot;(&quot; [Symbol] &quot;)&quot; Expr &quot;)&quot;;
+
+AssertIt.  Assertion ::= &quot;assert&quot;;
+AssertNot. Assertion ::= &quot;assert-not&quot;;
+
+ParFunDef.   FunDef ::= &quot;(&quot; &quot;par&quot; &quot;(&quot; [Symbol] &quot;)&quot; InnerFunDef &quot;)&quot;;
+MonoFunDef.  FunDef ::= InnerFunDef;
+InnerFunDef. InnerFunDef ::= &quot;(&quot; Symbol &quot;(&quot; [Binding] &quot;)&quot; Type &quot;)&quot;;
+
+ParFunDecl.   FunDecl ::= &quot;(&quot; &quot;par&quot; &quot;(&quot; [Symbol] &quot;)&quot; &quot;(&quot; InnerFunDecl &quot;)&quot; &quot;)&quot;;
+MonoFunDecl.  FunDecl ::= InnerFunDecl;
+InnerFunDecl. InnerFunDecl ::= Symbol &quot;(&quot; [Type] &quot;)&quot; Type;
+
+Datatype.     Datatype ::= &quot;(&quot; Symbol [Constructor] &quot;)&quot;;
+Constructor.  Constructor ::= &quot;(&quot; Symbol [Binding] &quot;)&quot;;
+
+Binding. Binding ::= &quot;(&quot; Symbol Type &quot;)&quot;;
+
+LetDecl. LetDecl ::= &quot;(&quot; Binding Expr &quot;)&quot;;
+
+TyVar.   Type ::= Symbol;
+TyApp.   Type ::= &quot;(&quot; Symbol [Type] &quot;)&quot;;
+ArrowTy. Type ::= &quot;(&quot; &quot;=&gt;&quot; [Type] &quot;)&quot;;
+IntTy.   Type ::= &quot;int&quot;;
+BoolTy.  Type ::= &quot;bool&quot;;
+
+Var.      Expr ::= Symbol;
+As.       Expr ::= &quot;(&quot; &quot;as&quot; Expr Type &quot;)&quot;;
+App.      Expr ::= &quot;(&quot; Head [Expr] &quot;)&quot;;
+Match.    Expr ::= &quot;(&quot; &quot;match&quot; Expr [Case] &quot;)&quot;;
+Let.      Expr ::= &quot;(&quot; &quot;let&quot; &quot;(&quot; [LetDecl] &quot;)&quot; Expr &quot;)&quot;;
+Binder.   Expr ::= &quot;(&quot; Binder &quot;(&quot; [Binding] &quot;)&quot; Expr &quot;)&quot;;
+LitInt.   Expr ::= Integer;
+LitTrue.  Expr ::= &quot;true&quot;;
+LitFalse. Expr ::= &quot;false&quot;;
+
+Lambda. Binder ::= &quot;lambda&quot;;
+Forall. Binder ::= &quot;forall&quot;;
+Exists. Binder ::= &quot;exists&quot;;
+
+Case.    Case ::= &quot;(&quot; &quot;case&quot; Pattern Expr &quot;)&quot;;
+
+Default.    Pattern ::= &quot;default&quot;;
+ConPat.     Pattern ::= &quot;(&quot; Symbol [Symbol] &quot;)&quot;;
+SimplePat.  Pattern ::= Symbol;
+
+Const.      Head ::= Symbol;
+At.         Head ::= &quot;@&quot;;
+IfThenElse. Head ::= &quot;ite&quot;;
+And.        Head ::= &quot;and&quot;;
+Or.         Head ::= &quot;or&quot;;
+Not.        Head ::= &quot;not&quot;;
+Implies.    Head ::= &quot;=&gt;&quot;;
+Equal.      Head ::= &quot;=&quot;;
+Distinct.   Head ::= &quot;distinct&quot;;
+IntAdd.     Head ::= &quot;+&quot;;
+IntSub.     Head ::= &quot;-&quot;;
+IntMul.     Head ::= &quot;*&quot;;
+IntDiv.     Head ::= &quot;div&quot;;
+IntMod.     Head ::= &quot;mod&quot;;
+IntGt.      Head ::= &quot;&gt;&quot;;
+IntGe.      Head ::= &quot;&gt;=&quot;;
+IntLt.      Head ::= &quot;&lt;&quot;;
+IntLe.      Head ::= &quot;&lt;=&quot;;
+
+terminator LetDecl &quot;&quot;;
+terminator Case &quot;&quot;;
+terminator Expr &quot;&quot;;
+terminator Datatype &quot;&quot;;
+terminator Constructor &quot;&quot;;
+terminator Binding &quot;&quot;;
+terminator Symbol &quot;&quot;;
+terminator Type &quot;&quot;;
+terminator FunDecl &quot;&quot;;
+terminator FunDef &quot;&quot;;
+
+position token Symbol (letter|[&quot;~!@$%^&amp;*_-+=&lt;&gt;.?/&quot;])(letter|digit|[&quot;~!@$%^&amp;*_-+=&lt;&gt;.?/&quot;])*;</code></pre>
+<div class="references">
+
+</div>
+</div>
+</body>
+</html>
