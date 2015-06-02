@@ -3,19 +3,11 @@
 {-# LANGUAGE RecordWildCards #-}
 import Text.Pandoc.JSON
 import Text.Pandoc
-import Tip
+import Tip.Core
 import Tip.Parser
-import Tip.Parser.Convert
-import Tip.Pretty.SMT as SMT
-import Tip.Pretty.Why3 as Why3
-import Tip.Lint
-import Tip.Fresh
-import Tip.Simplify
-import Tip.Decase
-import Tip.Lift
-import Tip.EqualFunctions
-import Tip.Deprove
-import Tip
+import Tip.Passes
+import qualified Tip.Pretty.SMT as SMT
+import qualified Tip.Pretty.Why3 as Why3
 import Control.Monad
 
 transform :: Block -> IO Block
@@ -35,22 +27,20 @@ tipBlock name classes attrs expr =
     Right thy = parse expr
     (modes, passes) = go classes [] []
     go [] modes passes = (reverse modes, reverse passes)
-    go ("match-to-if":xs) modes passes = go xs modes (Decase:passes)
-    go ("negate-conjecture":xs) modes passes = go xs modes (Deprove:passes)
-    go ("lambda-lift":xs) modes passes = go xs modes (LambdaLift:passes)
     go ("no-datatypes":xs) modes passes = go xs (NoData:modes) passes
     go ("no-check-sat":xs) modes passes = go xs (NoCheckSat:modes) passes
     go ("no-functions":xs) modes passes = go xs (NoFuns:modes) passes
     go ("no-properties":xs) modes passes = go xs (NoProp:modes) passes
     go ("why3":xs) modes passes = go xs (Why3:modes) passes
+    go (x:xs) modes passes =
+      case reads x of
+        [(pass, "")] -> go xs modes (pass:passes)
+        _ -> error ("Unknown pass " ++ x)
 
-data Pass = Decase | Deprove | LambdaLift deriving Show
 data Mode = NoData | NoProp | NoFuns | NoCheckSat | Why3 deriving (Show, Eq)
 
-pass :: Pass -> Theory Id -> Theory Id
-pass Decase     = freshPass decase
-pass Deprove    = freshPass deprove
-pass LambdaLift = freshPass (axiomatizeLambdas <=< lambdaLift)
+pass :: StandardPass -> Theory Id -> Theory Id
+pass p = freshPass (runPass p)
 
 mode :: [Mode] -> Theory Id -> String
 mode ms thy@Theory{..}
@@ -63,9 +53,9 @@ mode ms thy@Theory{..}
     dropRev n = reverse . drop n . reverse
     thy' =
       thy {
-        thy_data_decls = checking NoData thy_data_decls,
-        thy_func_decls = checking NoFuns thy_func_decls,
-        thy_form_decls = checking NoFuns thy_form_decls }
+        thy_datatypes = checking NoData thy_datatypes,
+        thy_funcs = checking NoFuns thy_funcs,
+        thy_asserts = checking NoFuns thy_asserts }
     checking x xs
       | x `elem` ms = []
       | otherwise = xs

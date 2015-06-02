@@ -61,7 +61,7 @@ SMT-LIB syntax, using if-then-else with discriminator and projector functions
 these syntaxes. Here is how the example above looks with
 match removed:
 
-```{.tip-include .match-to-if}
+```{.tip-include .RemoveMatch}
 nat.smt2
 ```
 
@@ -83,7 +83,7 @@ construct which identifies the goal, akin to `conjecture` in TPTP, or `goal`
 in Why3. The declaration `(assert-not p)` means the same as `(assert (not p))`,
 except that it marks `p` as a goal. It can easily be removed by the TIP tool:
 
-```{.tip-include .negate-conjecture}
+```{.tip-include .NegateConjecture}
 nat.smt2
 ```
 
@@ -135,7 +135,7 @@ support polymorphism if they want to solve polymorphic problems.
 When translating `assert-not` into `assert`, any polymorphic type variables
 are Skolemised:
 
-```{.tip-include .negate-conjecture}
+```{.tip-include .NegateConjecture}
 list.smt2
 ```
 
@@ -174,7 +174,7 @@ In some cases, higher order functions can be removed with specialisation,
 like in the example above. They can always be removed by defunctionalisation,
 which is implemented in our tool chain. This pass transforms the above program into this:
 
-```{.tip-include .lambda-lift}
+```{.tip-include .LambdaLift .AxiomatizeLambdas}
 map.smt2
 ```
 

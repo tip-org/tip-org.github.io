@@ -64,12 +64,15 @@
 <pre><code>module A
   use HighOrd
   use import int.Int
+  use import int.EuclideanDivision
   type nat = Zero | Succ (nat)
   function plus (x : nat) (y : nat) : nat =
     match x with
       | Zero -&gt; y
       | Succ n -&gt; Succ (plus n y)
     end
+  (* plus (Zero) y = y
+     plus (Succ n) y = Succ (plus n y) *)
   goal x0 : forall n : nat, m : nat . (plus n m) = (plus m n)
 end</code></pre>
 <!--
@@ -110,19 +113,22 @@ It is a bit broken because you have to first define all the signatures, and then
      (case (cons x zs) (cons x (append zs ys))))))
 (assert
   (not
-  (forall ((xs (list sk_a)))
-    (= (append xs (as nil (list sk_a))) xs))))
+    (forall ((xs (list sk_a)))
+      (= (append xs (as nil (list sk_a))) xs))))
 (check-sat)</code></pre>
 <p>Here is the same problem in Why3 syntax:</p>
 <pre><code>module A
   use HighOrd
   use import int.Int
+  use import int.EuclideanDivision
   type list &#39;a = Nil2 | Cons2 &#39;a (list &#39;a)
   function append (xs : list &#39;a) (ys : list &#39;a) : list &#39;a =
     match xs with
       | Nil2 -&gt; Nil2 : list &#39;a
       | Cons2 x zs -&gt; Cons2 x (append zs ys)
     end
+  (* append (Nil2) ys = Nil2 : list &#39;a
+     append (Cons2 x zs) ys = Cons2 x (append zs ys) *)
   goal x0 : forall xs : list &#39;a . (append xs (Nil2 : list &#39;a)) = xs
 end</code></pre>
 <h3 id="example-higher-order-functions">Example: Higher-order functions</h3>
@@ -147,21 +153,18 @@ end</code></pre>
 (declare-datatypes (a)
   ((list (nil) (cons (head a) (tail (list a))))))
 (declare-fun (par (a b) (apply1 ((fun1 a b) a) b)))
-(declare-fun
-  (par (a b c) (lam ((fun1 b c) (fun1 a b)) (fun1 a c))))
 (define-funs-rec
   ((par (a b) (map2 ((f (fun1 a b)) (xs (list a))) (list b))))
   ((match xs
      (case nil (as nil (list b)))
      (case (cons y ys) (cons (apply1 f y) (map2 f ys))))))
-(assert
-  (par (a b c)
-    (forall ((f (fun1 b c)) (g (fun1 a b)) (x a))
-      (= (apply1 (lam f g) x) (apply1 f (apply1 g x))))))
+(define-funs-rec
+  ((par (a b c) (lam ((f (fun1 b c)) (g (fun1 a b))) (=&gt; a c))))
+  ((lambda ((x a)) (apply1 f (apply1 g x)))))
 (assert-not
   (par (a b c)
     (forall ((f (fun1 b c)) (g (fun1 a b)) (xs (list a)))
-      (= (map2 (lam f g) xs) (map2 f (map2 g xs))))))
+      (= (as (map2 (lam f g) xs) (list c)) (map2 f (map2 g xs))))))
 (check-sat)</code></pre>
 <p>Here, <code>=&gt;</code> with one argument is replaced with <code>fun1</code>, <code>@</code> with one argument is replaced with <code>apply1</code>. The lambda in the property has become a new function, <code>lam</code>, which closes over the free variables <code>f</code> and <code>g</code>.</p>
 <h3 id="todo">TODO</h3>
