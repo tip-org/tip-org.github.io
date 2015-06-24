@@ -25,11 +25,12 @@
 <h3 id="example-datatypes-match-expressions-and-recursion">Example: Datatypes, match-expressions and recursion</h3>
 <p>This example specifies the commutativity of plus over natural numbers:</p>
 <pre><code>(declare-datatypes () ((Nat (Zero) (Succ (pred Nat)))))
-(define-funs-rec
-  ((plus ((x Nat) (y Nat)) Nat))
-  ((match x
-     (case Zero y)
-     (case (Succ n) (Succ (plus n y))))))
+(define-fun-rec
+  plus
+    ((x Nat) (y Nat)) Nat
+    (match x
+      (case Zero y)
+      (case (Succ n) (Succ (plus n y)))))
 (assert-not (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))
 (check-sat)</code></pre>
 <p>The syntax should be familiar to users of SMT-LIB. Natural numbers are defined with <code>declare-datatypes</code>. This is not in the SMT-LIB standard, but is accepted by many SMT solvers, including Z3 and CVC4.</p>
@@ -37,28 +38,31 @@
 <p>The <code>match</code> expression is our proposed extension for match-expressions. The first argument to match is the scrutinee, followed by a list of branches, all starting with the word <code>case</code> (for ease of reading). The first argument to <code>case</code> is the constructor and bound variables (their types are not indicated, as they are inferrable from the type of the scrutinee and the data type declarations).</p>
 <p>TIP also allows the user to define their functions in a more traditional SMT-LIB syntax, using if-then-else with discriminator and projector functions (in this case <code>is-Nat</code> and <code>pred</code>). The TIP tool is able to translate between these syntaxes. Here is how the example above looks with match removed:</p>
 <pre><code>(declare-datatypes () ((Nat (Zero) (Succ (pred Nat)))))
-(define-funs-rec
-  ((plus ((x Nat) (y Nat)) Nat))
-  ((ite (is-Succ x) (Succ (plus (pred x) y)) y)))
+(define-fun-rec
+  plus
+    ((x Nat) (y Nat)) Nat (ite (is-Succ x) (Succ (plus (pred x) y)) y))
 (assert-not (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))
 (check-sat)</code></pre>
 <p>Match expressions can also have a default branch which matches all other pattern than those explicitly listed. This is sometimes useful when there are many constructors. However, in the example above, either of the patterns <code>Zero</code> or <code>(Succ n)</code> can be replaced with <code>default</code>. As an example, this is how it looks with the <code>Succ</code> case transformed:</p>
 <pre><code>(declare-datatypes () ((Nat (Zero) (Succ (pred Nat)))))
-(define-funs-rec
-  ((plus ((x Nat) (y Nat)) Nat))
-  ((match x
-     (case default (Succ (plus (pred x) y)))
-     (case Zero y))))
+(define-fun-rec
+  plus
+    ((x Nat) (y Nat)) Nat
+    (match x
+      (case default (Succ (plus (pred x) y)))
+      (case Zero y)))
 (assert-not (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))
 (check-sat)</code></pre>
 <p>Some provers like to distinguish between axioms and conjectures, and in many inductive problems we have a distinguished conjecture. Following our principle not to throw away information from the input problem, TIP has a <code>assert-not</code> construct which identifies the goal, akin to <code>conjecture</code> in TPTP, or <code>goal</code> in Why3. The declaration <code>(assert-not p)</code> means the same as <code>(assert (not p))</code>, except that it marks <code>p</code> as a goal. It can easily be removed by the TIP tool:</p>
 <pre><code>(declare-datatypes () ((Nat (Zero) (Succ (pred Nat)))))
-(define-funs-rec
-  ((plus ((x Nat) (y Nat)) Nat))
-  ((match x
-     (case Zero y)
-     (case (Succ n) (Succ (plus n y))))))
-(assert (not (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n)))))
+(define-fun-rec
+  plus
+    ((x Nat) (y Nat)) Nat
+    (match x
+      (case Zero y)
+      (case (Succ n) (Succ (plus n y)))))
+(assert
+  (exists ((n Nat) (m Nat)) (distinct (plus n m) (plus m n))))
 (check-sat)</code></pre>
 <p>The tool can also translate the example to Why3 syntax. It then looks like this:</p>
 <pre><code>module A
@@ -90,11 +94,13 @@ It is a bit broken because you have to first define all the signatures, and then
 <p>TIP also supports polymorphism. Here is an example showing the right identity of append over polymorphic lists:</p>
 <pre><code>(declare-datatypes (a)
   ((list (nil) (cons (head a) (tail (list a))))))
-(define-funs-rec
-  ((par (a) (append ((xs (list a)) (ys (list a))) (list a))))
-  ((match xs
-     (case nil (as nil (list a)))
-     (case (cons x zs) (cons x (append zs ys))))))
+(define-fun-rec
+  (par (a)
+    (append
+       ((xs (list a)) (ys (list a))) (list a)
+       (match xs
+         (case nil (as nil (list a)))
+         (case (cons x zs) (cons x (append zs ys)))))))
 (assert-not
   (par (a)
     (forall ((xs (list a))) (= (append xs (as nil (list a))) xs))))
@@ -106,15 +112,16 @@ It is a bit broken because you have to first define all the signatures, and then
 <pre><code>(declare-sort sk_a 0)
 (declare-datatypes (a)
   ((list (nil) (cons (head a) (tail (list a))))))
-(define-funs-rec
-  ((par (a) (append ((xs (list a)) (ys (list a))) (list a))))
-  ((match xs
-     (case nil (as nil (list a)))
-     (case (cons x zs) (cons x (append zs ys))))))
+(define-fun-rec
+  (par (a)
+    (append
+       ((xs (list a)) (ys (list a))) (list a)
+       (match xs
+         (case nil (as nil (list a)))
+         (case (cons x zs) (cons x (append zs ys)))))))
 (assert
-  (not
-    (forall ((xs (list sk_a)))
-      (= (append xs (as nil (list sk_a))) xs))))
+  (exists ((xs (list sk_a)))
+    (distinct (append xs (as nil (list sk_a))) xs)))
 (check-sat)</code></pre>
 <p>Here is the same problem in Why3 syntax:</p>
 <pre><code>module A
@@ -135,11 +142,13 @@ end</code></pre>
 <p>This is an example property about mapping functions over lists:</p>
 <pre><code>(declare-datatypes (a)
   ((list (nil) (cons (head a) (tail (list a))))))
-(define-funs-rec
-  ((par (a b) (map2 ((f (=&gt; a b)) (xs (list a))) (list b))))
-  ((match xs
-     (case nil (as nil (list b)))
-     (case (cons y ys) (cons (@ f y) (map2 f ys))))))
+(define-fun-rec
+  (par (a b)
+    (map2
+       ((f (=&gt; a b)) (xs (list a))) (list b)
+       (match xs
+         (case nil (as nil (list b)))
+         (case (cons y ys) (cons (@ f y) (map2 f ys)))))))
 (assert-not
   (par (a b c)
     (forall ((f (=&gt; b c)) (g (=&gt; a b)) (xs (list a)))
@@ -153,14 +162,18 @@ end</code></pre>
 (declare-datatypes (a)
   ((list (nil) (cons (head a) (tail (list a))))))
 (declare-fun (par (a b) (apply1 ((fun1 a b) a) b)))
-(define-funs-rec
-  ((par (a b) (map2 ((f (fun1 a b)) (xs (list a))) (list b))))
-  ((match xs
-     (case nil (as nil (list b)))
-     (case (cons y ys) (cons (apply1 f y) (map2 f ys))))))
-(define-funs-rec
-  ((par (a b c) (lam ((f (fun1 b c)) (g (fun1 a b))) (=&gt; a c))))
-  ((lambda ((x a)) (apply1 f (apply1 g x)))))
+(define-fun-rec
+  (par (a b)
+    (map2
+       ((f (fun1 a b)) (xs (list a))) (list b)
+       (match xs
+         (case nil (as nil (list b)))
+         (case (cons y ys) (cons (apply1 f y) (map2 f ys)))))))
+(define-fun
+  (par (a b c)
+    (lam
+       ((f (fun1 b c)) (g (fun1 a b))) (=&gt; a c)
+       (lambda ((x a)) (apply1 f (apply1 g x))))))
 (assert-not
   (par (a b c)
     (forall ((f (fun1 b c)) (g (fun1 a b)) (xs (list a)))

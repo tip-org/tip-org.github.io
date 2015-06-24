@@ -21,44 +21,56 @@ Start. Start ::= [Decl];
 
 DeclareDatatypes. Decl ::= &quot;declare-datatypes&quot; &quot;(&quot; [Symbol] &quot;)&quot; &quot;(&quot; [Datatype] &quot;)&quot;;
 DeclareSort.      Decl ::= &quot;declare-sort&quot; Symbol Integer;
+DeclareConst.     Decl ::= &quot;declare-const&quot; ConstDecl;
+DeclareConstPar.  Decl ::= &quot;declare-const&quot; &quot;(&quot; Par &quot;(&quot; ConstDecl &quot;)&quot; &quot;)&quot;;
 DeclareFun.       Decl ::= &quot;declare-fun&quot; FunDecl;
-DefineFunsRec.    Decl ::= &quot;define-funs-rec&quot; &quot;(&quot; [FunDef] &quot;)&quot; &quot;(&quot; [Expr] &quot;)&quot;;
-MonoAssert.       Decl ::= Assertion Expr;
-ParAssert.        Decl ::= Assertion &quot;(&quot; &quot;par&quot; &quot;(&quot; [Symbol] &quot;)&quot; Expr &quot;)&quot;;
+DeclareFunPar.    Decl ::= &quot;declare-fun&quot; &quot;(&quot; Par &quot;(&quot; FunDecl &quot;)&quot; &quot;)&quot;;
+DefineFun.        Decl ::= &quot;define-fun&quot; FunDef;
+DefineFunPar.     Decl ::= &quot;define-fun&quot; &quot;(&quot; Par &quot;(&quot; FunDef &quot;)&quot; &quot;)&quot;;
+DefineFunRec.     Decl ::= &quot;define-fun-rec&quot; FunDef;
+DefineFunRecPar.  Decl ::= &quot;define-fun-rec&quot; &quot;(&quot; Par &quot;(&quot; FunDef &quot;)&quot; &quot;)&quot;;
+DefineFunsRec.    Decl ::= &quot;define-funs-rec&quot; &quot;(&quot; [FunDec] &quot;)&quot; &quot;(&quot; [Expr] &quot;)&quot;;
+Assert.           Decl ::= Assertion Expr;
+AssertPar.        Decl ::= Assertion &quot;(&quot; Par Expr &quot;)&quot;;
 
 AssertIt.  Assertion ::= &quot;assert&quot;;
 AssertNot. Assertion ::= &quot;assert-not&quot;;
 
-ParFunDef.   FunDef ::= &quot;(&quot; &quot;par&quot; &quot;(&quot; [Symbol] &quot;)&quot; InnerFunDef &quot;)&quot;;
-MonoFunDef.  FunDef ::= InnerFunDef;
-InnerFunDef. InnerFunDef ::= &quot;(&quot; Symbol &quot;(&quot; [Binding] &quot;)&quot; Type &quot;)&quot;;
+Par.         Par    ::= &quot;par&quot; &quot;(&quot; [Symbol] &quot;)&quot;;
 
-ParFunDecl.   FunDecl ::= &quot;(&quot; &quot;par&quot; &quot;(&quot; [Symbol] &quot;)&quot; &quot;(&quot; InnerFunDecl &quot;)&quot; &quot;)&quot;;
-MonoFunDecl.  FunDecl ::= InnerFunDecl;
-InnerFunDecl. InnerFunDecl ::= Symbol &quot;(&quot; [Type] &quot;)&quot; Type;
+ConstDecl.   ConstDecl ::= Symbol Type;
+
+FunDecl.     FunDecl ::= Symbol &quot;(&quot; [Type] &quot;)&quot; Type;
+
+FunDef.      FunDef ::= Symbol &quot;(&quot; [Binding] &quot;)&quot; Type Expr;
+
+ParFunDec.   FunDec ::= &quot;(&quot; Par InnerFunDec &quot;)&quot;;
+MonoFunDec.  FunDec ::= InnerFunDec;
+InnerFunDec. InnerFunDec ::= &quot;(&quot; Symbol &quot;(&quot; [Binding] &quot;)&quot; Type &quot;)&quot;;
 
 Datatype.     Datatype ::= &quot;(&quot; Symbol [Constructor] &quot;)&quot;;
 Constructor.  Constructor ::= &quot;(&quot; Symbol [Binding] &quot;)&quot;;
 
 Binding. Binding ::= &quot;(&quot; Symbol Type &quot;)&quot;;
 
-LetDecl. LetDecl ::= &quot;(&quot; Binding Expr &quot;)&quot;;
+LetDecl. LetDecl ::= &quot;(&quot; Symbol Expr &quot;)&quot;;
 
 TyVar.   Type ::= Symbol;
 TyApp.   Type ::= &quot;(&quot; Symbol [Type] &quot;)&quot;;
 ArrowTy. Type ::= &quot;(&quot; &quot;=&gt;&quot; [Type] &quot;)&quot;;
-IntTy.   Type ::= &quot;int&quot;;
-BoolTy.  Type ::= &quot;bool&quot;;
+IntTy.   Type ::= &quot;Int&quot;;
+BoolTy.  Type ::= &quot;Bool&quot;;
 
-Var.      Expr ::= Symbol;
-As.       Expr ::= &quot;(&quot; &quot;as&quot; Expr Type &quot;)&quot;;
-App.      Expr ::= &quot;(&quot; Head [Expr] &quot;)&quot;;
-Match.    Expr ::= &quot;(&quot; &quot;match&quot; Expr [Case] &quot;)&quot;;
-Let.      Expr ::= &quot;(&quot; &quot;let&quot; &quot;(&quot; [LetDecl] &quot;)&quot; Expr &quot;)&quot;;
-Binder.   Expr ::= &quot;(&quot; Binder &quot;(&quot; [Binding] &quot;)&quot; Expr &quot;)&quot;;
-LitInt.   Expr ::= Integer;
-LitTrue.  Expr ::= &quot;true&quot;;
-LitFalse. Expr ::= &quot;false&quot;;
+Var.       Expr ::= Symbol;
+As.        Expr ::= &quot;(&quot; &quot;as&quot; Expr Type &quot;)&quot;;
+App.       Expr ::= &quot;(&quot; Head [Expr] &quot;)&quot;;
+Match.     Expr ::= &quot;(&quot; &quot;match&quot; Expr [Case] &quot;)&quot;;
+Let.       Expr ::= &quot;(&quot; &quot;let&quot; &quot;(&quot; [LetDecl] &quot;)&quot; Expr &quot;)&quot;;
+Binder.    Expr ::= &quot;(&quot; Binder &quot;(&quot; [Binding] &quot;)&quot; Expr &quot;)&quot;;
+LitInt.    Expr ::= Integer;
+LitNegInt. Expr ::= &quot;-&quot; Integer;
+LitTrue.   Expr ::= &quot;true&quot;;
+LitFalse.  Expr ::= &quot;false&quot;;
 
 Lambda. Binder ::= &quot;lambda&quot;;
 Forall. Binder ::= &quot;forall&quot;;
@@ -99,8 +111,9 @@ terminator Symbol &quot;&quot;;
 terminator Type &quot;&quot;;
 terminator FunDecl &quot;&quot;;
 terminator FunDef &quot;&quot;;
+terminator FunDec &quot;&quot;;
 
-position token Symbol (letter|[&quot;~!@$%^&amp;*_-+=&lt;&gt;.?/&quot;])(letter|digit|[&quot;~!@$%^&amp;*_-+=&lt;&gt;.?/&quot;])*;</code></pre>
+position token Symbol (letter|[&quot;~!@$%^&amp;*_+=&lt;&gt;.?/&quot;])(letter|digit|[&quot;~!@$%^&amp;*_-+=&lt;&gt;.?/&quot;])*;</code></pre>
 <div class="references">
 
 </div>
