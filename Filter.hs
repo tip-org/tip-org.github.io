@@ -1,11 +1,9 @@
-#!/usr/bin/runhaskell
-
 {-# LANGUAGE RecordWildCards #-}
 import Text.Pandoc.JSON
 import Text.Pandoc
 import Tip.Core
 import Tip.Parser
-import Tip.Passes
+import Tip.Passes hiding (Mode)
 import qualified Tip.Pretty.SMT as SMT
 import qualified Tip.Pretty.Why3 as Why3
 import Control.Monad
@@ -28,7 +26,6 @@ tipBlock name classes attrs expr =
     (modes, passes) = go classes [] []
     go [] modes passes = (reverse modes, reverse passes)
     go ("no-datatypes":xs) modes passes = go xs (NoData:modes) passes
-    go ("no-check-sat":xs) modes passes = go xs (NoCheckSat:modes) passes
     go ("no-functions":xs) modes passes = go xs (NoFuns:modes) passes
     go ("no-properties":xs) modes passes = go xs (NoProp:modes) passes
     go ("why3":xs) modes passes = go xs (Why3:modes) passes
@@ -37,20 +34,19 @@ tipBlock name classes attrs expr =
         [(pass, "")] -> go xs modes (pass:passes)
         _ -> error ("Unknown pass " ++ x)
 
-data Mode = NoData | NoProp | NoFuns | NoCheckSat | Why3 deriving (Show, Eq)
+data Mode = NoData | NoProp | NoFuns | Why3 deriving (Show, Eq)
 
 pass :: StandardPass -> Theory Id -> Theory Id
-pass p = freshPass (runPass p)
+pass p thy =
+  case freshPass (runPass p) thy of
+    [thy'] -> thy'
 
 mode :: [Mode] -> Theory Id -> String
 mode ms thy@Theory{..}
   | Why3 `elem` ms       = show . Why3.ppTheory $ thy'
-  | NoCheckSat `elem` ms = out' thy'
   | otherwise = out thy'
   where
-    out  = show . SMT.ppTheory
-    out' = dropRev (length "(check-sat)") . show . SMT.ppTheory
-    dropRev n = reverse . drop n . reverse
+    out  = show . SMT.ppTheory (SMT.smtQuoted ++ SMT.tipKeywords ++ SMT.smtKeywords)
     thy' =
       thy {
         thy_datatypes = checking NoData thy_datatypes,

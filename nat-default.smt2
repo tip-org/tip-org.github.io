@@ -1,8 +1,7 @@
-(declare-datatypes () ((Nat (Zero) (Succ (pred Nat)))))
-(define-funs-rec
-  ((plus ((x Nat) (y Nat)) Nat))
-  ((match x
-     (case Zero y)
-     (case default (Succ (plus (pred x) y))))))
-(assert-not (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))
-(check-sat)
+(declare-datatype Nat ((Zero) (Succ (pred Nat))))
+(define-fun-rec
+  plus ((x Nat) (y Nat)) Nat
+  (match x
+    ((Zero y)
+     (default (Succ (plus (pred x) y))))))
+(prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))
