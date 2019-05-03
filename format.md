@@ -31,6 +31,23 @@ When designing our language extensions, we had these criteria in mind:
     advanced features (such as higher-order functions) from problems to
     help provers that don't support those features.
 
+### Differences between TIP and SMT-LIB 2.6
+Our ambition is to keep TIP as close to SMT-LIB as possible.
+However, there are still a few incompatibilities:
+
+- TIP allows polymorphism and type variables in function definitions. SMT-LIB does
+only allow polymorphism in datatype definitions.
+- TIP allows partial functions. SMT-LIB does not.
+- For convenience, TIP has a special command `prove` for stating a goal to prove.
+This allows us to state several subgoals to be proved
+as separate proof attempts, in one file.
+
+#### Translating TIP into SMT-LIB syntax
+We provide translation tools to convert TIP files not compatible with SMT-LIB 2.6
+to SMT-LIB syntax. This includes monomorphisation to remove type variables,
+and a translation pass which removed the `prove` statement and replaces them with valid SMT-LIB syntax using push/pop.
+(Details to be added.)
+
 ### Example: Datatypes, match-expressions and recursion
 
 This example specifies the commutativity of plus over natural numbers:
@@ -48,17 +65,14 @@ The syntax should be familiar to users of SMT-LIB. Natural numbers are
 defined with `declare-datatypes`. This is not in the SMT-LIB standard,
 but is accepted by many SMT solvers, including Z3 and CVC4.
 
-The function is declared using `define-funs-rec` as proposed in the
-SMT-LIB v2.5 draft (@smtlib25). We define `plus` rather than
-axiomatising it because, if the problem is from a functional program, we
+The function is declared using `define-fun-rec` as in the
+[SMT-LIB v2.6 standard](http://smtlib.cs.uiowa.edu/papers/smt-lib-reference-v2.6-r2017-07-18.pdf).
+We define `plus` rather than axiomatising it because, if the problem is from a functional program, we
 want to be explicit about which axioms are function definitions.
 
 The `match` expression is our proposed extension for match-expressions.
 The first argument to match is the scrutinee, followed by a list of
-branches, all starting with the word `case` (for ease of reading). The
-first argument to `case` is the constructor and bound variables (their
-types are not indicated, as they are inferrable from the type of the
-scrutinee and the data type declarations).
+branches.
 
 TIP also allows the user to define their functions in a more traditional
 SMT-LIB syntax, using if-then-else with discriminator and projector
@@ -75,7 +89,7 @@ with match removed:
 Match expressions can also have a default branch which matches all other
 pattern than those explicitly listed. This is sometimes useful when
 there are many constructors. However, in the example above, either of
-the patterns `Zero` or `(Succ n)` can be replaced with `default`. As an
+the patterns `Zero` or `(Succ n)` can be replaced with the deafult symbol `_`. As an
 example, this is how it looks with the `Succ` case transformed:
 
     (declare-datatype Nat ((Zero) (Succ (pred Nat))))
@@ -90,9 +104,9 @@ example, this is how it looks with the `Succ` case transformed:
 Some provers like to distinguish between axioms and conjectures, and in
 many inductive problems we have a distinguished conjecture. Following
 our principle not to throw away information from the input problem, TIP
-has a `assert-not` construct which identifies the goal, akin to
+has a `prove` construct which identifies the goal, akin to
 `conjecture` in TPTP, or `goal` in Why3. The declaration
-`(assert-not p)` means the same as `(assert (not p))`, except that it
+`(prove p)` means the same as `(assert (not p))`, except that it
 marks `p` as a goal. It can easily be removed by the TIP tool:
 
     (declare-datatype Nat ((Zero) (Succ (pred Nat))))
@@ -152,11 +166,16 @@ identity of append over polymorphic lists:
       (par (a) (forall ((xs (list a))) (= (append xs (_ nil a)) xs))))
 
 We allow polymorphic datatypes, declarations and assertions using the
-syntax suggested in @smtlam, which is currently waiting to be merged
+syntactic form `(par (A) ...)` to quantify over the type variable `A`. Only rank-1
+polymorphism is supported. Note that TIP allows both polymorphic datatypes and
+polymorphic functions, unlike SMT-LIB 2.6, which only allows it in datatype definitions.
+
+<!--
+suggested in @smtlam, which is currently waiting to be merged
 into CVC4 (@cvc4parPR). This syntax uses the syntactic form
 `(par (A) ...)` to quantify over the type variable `A`. Only rank-1
 polymorphism is supported.
-
+-->
 Expressions can be annotated with their type with the `as` keyword. When
 the type of a function application is not fully specified by only
 looking the types of its arguments, the problem must use `as` to specify
@@ -268,6 +287,7 @@ Here, `=>` with one argument is replaced with `fun1`, `@` with one
 argument is replaced with `apply1`. The lambda in the property has
 become a new function, `lam`, which closes over the free variables `f`
 and `g`.
+
 
 ### TODO
 

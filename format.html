@@ -22,6 +22,15 @@
 <li>As far as possible, the syntax should be compatible with SMT-LIB. So we do not introduce new features just for the sake of it. We are however incompatible with SMT-LIB whenever it’s needed to avoid breaking the first criterion.</li>
 <li>The format should be accessible: easy to understand and easy for other tools to use. We have written a tool which removes some of the advanced features (such as higher-order functions) from problems to help provers that don’t support those features.</li>
 </ol>
+<h3 id="differences-between-tip-and-smt-lib-2.6">Differences between TIP and SMT-LIB 2.6</h3>
+<p>Our ambition is to keep TIP as close to SMT-LIB as possible. However, there are still a few incompatibilities:</p>
+<ul>
+<li>TIP allows polymorphism and type variables in function definitions. SMT-lib does only allow polymorphism in datatype definitions.</li>
+<li>TIP allows partial functions. SMT-LIB does not.</li>
+<li>For convenience, TIP has a special command <code>prove</code> for stating a goal to prove. This allows us to state several subgoals to be proved as separate proof attempts, in one file.</li>
+</ul>
+<h4 id="translating-tip-into-smt-lib-syntax">Translating TIP into SMT-LIB syntax</h4>
+<p>We provide translation tools to convert TIP files not compatible with SMT-LIB 2.6 to SMT-LIB syntax. This includes monomorphisation to remove polymorphic functions, and a translation pass which removed the <code>prove</code> statement and replaces them with valid SMT-LIB syntax using push/pop. (Details to be added.)</p>
 <h3 id="example-datatypes-match-expressions-and-recursion">Example: Datatypes, match-expressions and recursion</h3>
 <p>This example specifies the commutativity of plus over natural numbers:</p>
 <pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
@@ -33,15 +42,15 @@
      ((Succ n) (Succ (plus n y))))))
 (prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))</code></pre>
 <p>The syntax should be familiar to users of SMT-LIB. Natural numbers are defined with <code>declare-datatypes</code>. This is not in the SMT-LIB standard, but is accepted by many SMT solvers, including Z3 and CVC4.</p>
-<p>The function is declared using <code>define-funs-rec</code> as proposed in the SMT-LIB v2.5 draft (<span class="citation" data-cites="smtlib25">Barrett, Stump, and Tinelli (n.d.)</span>). We define <code>plus</code> rather than axiomatising it because, if the problem is from a functional program, we want to be explicit about which axioms are function definitions.</p>
-<p>The <code>match</code> expression is our proposed extension for match-expressions. The first argument to match is the scrutinee, followed by a list of branches, all starting with the word <code>case</code> (for ease of reading). The first argument to <code>case</code> is the constructor and bound variables (their types are not indicated, as they are inferrable from the type of the scrutinee and the data type declarations).</p>
+<p>The function is declared using <code>define-fun-rec</code> as in the <a href="http://smtlib.cs.uiowa.edu/papers/smt-lib-reference-v2.6-r2017-07-18.pdf">SMT-LIB v2.6 standard</a>. We define <code>plus</code> rather than axiomatising it because, if the problem is from a functional program, we want to be explicit about which axioms are function definitions.</p>
+<p>The <code>match</code> expression is our proposed extension for match-expressions. The first argument to match is the scrutinee, followed by a list of branches.</p>
 <p>TIP also allows the user to define their functions in a more traditional SMT-LIB syntax, using if-then-else with discriminator and projector functions (in this case <code>is-Nat</code> and <code>pred</code>). The TIP tool is able to translate between these syntaxes. Here is how the example above looks with match removed:</p>
 <pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
 (define-fun-rec
   plus
   ((x Nat) (y Nat)) Nat (ite (is-Succ x) (Succ (plus (pred x) y)) y))
 (prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))</code></pre>
-<p>Match expressions can also have a default branch which matches all other pattern than those explicitly listed. This is sometimes useful when there are many constructors. However, in the example above, either of the patterns <code>Zero</code> or <code>(Succ n)</code> can be replaced with <code>default</code>. As an example, this is how it looks with the <code>Succ</code> case transformed:</p>
+<p>Match expressions can also have a default branch which matches all other pattern than those explicitly listed. This is sometimes useful when there are many constructors. However, in the example above, either of the patterns <code>Zero</code> or <code>(Succ n)</code> can be replaced with the deafult symbol <code>_</code>. As an example, this is how it looks with the <code>Succ</code> case transformed:</p>
 <pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
 (define-fun-rec
   plus
@@ -50,7 +59,7 @@
     ((_ (Succ (plus (pred x) y)))
      (Zero y))))
 (prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))</code></pre>
-<p>Some provers like to distinguish between axioms and conjectures, and in many inductive problems we have a distinguished conjecture. Following our principle not to throw away information from the input problem, TIP has a <code>assert-not</code> construct which identifies the goal, akin to <code>conjecture</code> in TPTP, or <code>goal</code> in Why3. The declaration <code>(assert-not p)</code> means the same as <code>(assert (not p))</code>, except that it marks <code>p</code> as a goal. It can easily be removed by the TIP tool:</p>
+<p>Some provers like to distinguish between axioms and conjectures, and in many inductive problems we have a distinguished conjecture. Following our principle not to throw away information from the input problem, TIP has a <code>prove</code> construct which identifies the goal, akin to <code>conjecture</code> in TPTP, or <code>goal</code> in Why3. The declaration <code>(prove p)</code> means the same as <code>(assert (not p))</code>, except that it marks <code>p</code> as a goal. It can easily be removed by the TIP tool:</p>
 <pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
 (define-fun-rec
   plus
@@ -99,7 +108,13 @@ It is a bit broken because you have to first define all the signatures, and then
      ((cons x zs) (cons x (append zs ys))))))
 (prove
   (par (a) (forall ((xs (list a))) (= (append xs (_ nil a)) xs))))</code></pre>
-<p>We allow polymorphic datatypes, declarations and assertions using the syntax suggested in <span class="citation" data-cites="smtlam">Bonichon, Déharbe, and Tavares (2014)</span>, which is currently waiting to be merged into CVC4 (<span class="citation" data-cites="cvc4parPR">Bobot (n.d.)</span>). This syntax uses the syntactic form <code>(par (A) ...)</code> to quantify over the type variable <code>A</code>. Only rank-1 polymorphism is supported.</p>
+<p>We allow polymorphic datatypes, declarations and assertions using the syntactic form <code>(par (A) ...)</code> to quantify over the type variable <code>A</code>. Only rank-1 polymorphism is supported. Note that TIP allows both polymorphic datatypes and polymorphic functions, unlike SMT-LIB 2.6, which only allows it in datatype definitions.</p>
+<!--
+suggested in @smtlam, which is currently waiting to be merged
+into CVC4 (@cvc4parPR). This syntax uses the syntactic form
+`(par (A) ...)` to quantify over the type variable `A`. Only rank-1
+polymorphism is supported.
+-->
 <p>Expressions can be annotated with their type with the <code>as</code> keyword. When the type of a function application is not fully specified by only looking the types of its arguments, the problem must use <code>as</code> to specify the type.</p>
 <p>Polymorphism can be removed by specialising the program at some ground types, but this is not necessarily complete. Another method is to encode typing information over monomorphic terms. We plan to add techniques for this to the TIP toolchain. For now, provers must natively support polymorphism if they want to solve polymorphic problems.</p>
 <p>When translating <code>assert-not</code> into <code>assert</code>, any polymorphic type variables are Skolemised:</p>
@@ -172,18 +187,7 @@ end</code></pre>
 <p>Here, <code>=&gt;</code> with one argument is replaced with <code>fun1</code>, <code>@</code> with one argument is replaced with <code>apply1</code>. The lambda in the property has become a new function, <code>lam</code>, which closes over the free variables <code>f</code> and <code>g</code>.</p>
 <h3 id="todo">TODO</h3>
 <p>This document does not yet cover mutual recusion (over data types or over functions), or partial branches and partiality.</p>
-<h3 id="references" class="unnumbered">References</h3>
-<div id="refs" class="references">
-<div id="ref-smtlib25">
-<p>Barrett, Clark, Aaron Stump, and Cesare Tinelli. n.d. “The SMT-LIB Standard – Version 2.5 (Draft).” <a href="http://smtlib.cs.uiowa.edu/papers/smt-lib-reference-v2.5-draft.pdf" class="uri">http://smtlib.cs.uiowa.edu/papers/smt-lib-reference-v2.5-draft.pdf</a>.</p>
-</div>
-<div id="ref-cvc4parPR">
-<p>Bobot, François. n.d. “[RFC] Add Adhoc Polymorphism.” <a href="https://github.com/CVC4/CVC4/pull/51" class="uri">https://github.com/CVC4/CVC4/pull/51</a>.</p>
-</div>
-<div id="ref-smtlam">
-<p>Bonichon, Richard, David Déharbe, and Cláudia Tavares. 2014. “Extending SMT-LIB V2 with <span class="math inline"><em>λ</em></span>-Terms and Polymorphism.” In <em>Proceedings of the 12th International Workshop on Satisfiability Modulo Theories (Smt)</em>, edited by Philipp Rümmer and Christoph M. Wintersteiger, 53–62. CEUR Workshop Proceedings 1163. Aachen. <a href="http://ceur-ws.org/Vol-1163#paper-08" class="uri">http://ceur-ws.org/Vol-1163#paper-08</a>.</p>
-</div>
-</div>
+<h3 id="references">References</h3>
 </div>
 </body>
 </html>
