@@ -37,16 +37,18 @@ However, there are still a few incompatibilities:
 
 - TIP allows polymorphism and type variables in function definitions. SMT-LIB does
 only allow polymorphism in datatype definitions.
+- TIP allows higher-order functions, while SMT-LIB does not.
 - TIP allows partial functions. SMT-LIB does not.
 - For convenience, TIP has a special command `prove` for stating a goal to prove.
 This allows us to state several subgoals to be proved
 as separate proof attempts, in one file.
+- The same syntax for annotations as in SMT-LIB is used, but TIP allow annotations
+to be attached to arbitrary constructs, unlike SMT-LIB.
 
-#### Translating TIP into SMT-LIB syntax
 We provide translation tools to convert TIP files not compatible with SMT-LIB 2.6
-to SMT-LIB syntax. This includes monomorphisation to remove type variables,
-and a translation pass which removed the `prove` statement and replaces them with valid SMT-LIB syntax using push/pop.
-(Details to be added.)
+to valid SMT-LIB syntax (use the command `tip --smtlib myTIPfile.smt2`). This includes monomorphisation to remove type variables,
+removal of lambdas, completion of partial functions, removal of annotations
+and a translation pass which remove the `prove` statement and replaces them with valid SMT-LIB syntax using push/pop.
 
 ### Example: Datatypes, match-expressions and recursion
 

@@ -25,12 +25,13 @@
 <h3 id="differences-between-tip-and-smt-lib-2.6">Differences between TIP and SMT-LIB 2.6</h3>
 <p>Our ambition is to keep TIP as close to SMT-LIB as possible. However, there are still a few incompatibilities:</p>
 <ul>
-<li>TIP allows polymorphism and type variables in function definitions. SMT-lib does only allow polymorphism in datatype definitions.</li>
+<li>TIP allows polymorphism and type variables in function definitions. SMT-LIB does only allow polymorphism in datatype definitions.</li>
+<li>TIP allows higher-order functions, while SMT-LIB does not.</li>
 <li>TIP allows partial functions. SMT-LIB does not.</li>
 <li>For convenience, TIP has a special command <code>prove</code> for stating a goal to prove. This allows us to state several subgoals to be proved as separate proof attempts, in one file.</li>
+<li>The same syntax for annotations as in SMT-LIB is used, but TIP allow annotations to be attached to arbitrary constructs, unlike SMT-LIB.</li>
 </ul>
-<h4 id="translating-tip-into-smt-lib-syntax">Translating TIP into SMT-LIB syntax</h4>
-<p>We provide translation tools to convert TIP files not compatible with SMT-LIB 2.6 to SMT-LIB syntax. This includes monomorphisation to remove polymorphic functions, and a translation pass which removed the <code>prove</code> statement and replaces them with valid SMT-LIB syntax using push/pop. (Details to be added.)</p>
+<p>We provide translation tools to convert TIP files not compatible with SMT-LIB 2.6 to valid SMT-LIB syntax (use the command <code>tip --smtlib myTIPfile.smt2</code>). This includes monomorphisation to remove type variables, removal of lambdas, completion of partial functions, removal of annotations and a translation pass which remove the <code>prove</code> statement and replaces them with valid SMT-LIB syntax using push/pop.</p>
 <h3 id="example-datatypes-match-expressions-and-recursion">Example: Datatypes, match-expressions and recursion</h3>
 <p>This example specifies the commutativity of plus over natural numbers:</p>
 <pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
