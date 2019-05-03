@@ -1,12 +1,12 @@
 % TIP BNF
 
-This document contains the BNF of the [TIP](index.html) format,
-which is an extension of [SMT-LIB](http://smt-lib.org)
-for expression inductive problems.
-The grammar is written in [BNFC](http://bnfc.digitalgrammars.com/) syntax.
-The format is also decribed in [prose](format.html) with examples.
+This document contains the BNF of the [TIP](index.html) format, which is
+an extension of [SMT-LIB](http://smt-lib.org) for expression inductive
+problems. The grammar is written in
+[BNFC](http://bnfc.digitalgrammars.com/) syntax. The format is also
+decribed in [prose](format.html) with examples.
 
-```{.bnfc}
+``` {.bnfc}
 comment ";";
 Start. Start ::= [Decl];
 
@@ -109,4 +109,3 @@ terminator FunDec "";
 
 position token Symbol (letter|["~!@$%^&*_+=<>.?/"])(letter|digit|["~!@$%^&*_-+=<>.?/"])*;
 ```
-

@@ -3,5 +3,5 @@
   plus ((x Nat) (y Nat)) Nat
   (match x
     ((Zero y)
-     (default (Succ (plus (pred x) y))))))
+     (_ (Succ (plus (pred x) y))))))
 (prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))
