@@ -19,18 +19,17 @@
 <div class="link"><a href="http://www.cse.chalmers.se/~nicsma/papers/tip-tools.pdf">LPAR Article</a><p><em>TIP: Tools for Inductive Provers</em>, presented at <a href="">LPAR 2015</a>.</p></div>
 
 <h3>The current version of the benchmarks:</h3>
-<div class="link"><a href="tip-benchmarks-0.2.tar.gz">tip-benchmarks-0.2.tar.gz</a>
-<p>The benchmarks in TIP format. This is an extension of SMT-LIB with case statements and higher order functions.
-In addition, it uses datatypes (which are unofficially standardised),
-recursive function definitions from the SMT-LIB v2.5 draft,
-and polymorphic definitions as suggested for inclusion to CVC4.
+<div class="link"><a href="tip-benchmarks-0.3.tar.gz">tip-benchmarks-0.3.tar.gz</a>
+<p>The benchmarks in TIP format. This is an extension of SMT-LIB with
+polymorphism and higher order functions.</p>
 </div>
-<div class="link"><a href="tip-benchmarks-0.2-cvc4.tar.gz">tip-benchmarks-0.2-cvc4.tar.gz</a>
-<p>The problems converted to a simpler version of SMT-LIB.
-In this version, case statements are turned into if, and higher-order functions
-are eliminated using defunctionalisation. Polymorphism is removed by monomorphisation where possible.</p>
+<div class="link"><a href="tip-benchmarks-0.3-smtlib.tar.gz">tip-benchmarks-0.3-smtlib.tar.gz</a>
+<p>The problems converted to SMT-LIB format.
+In this version, polymorphism is removed heuristically by
+monomorphisation, and higher-order functions are eliminated using
+defunctionalisation.</p>
 </div>
-<div class="link"><a href="tip-benchmarks-0.2-why3.tar.gz">tip-benchmarks-0.2-why3.tar.gz</a>
+<div class="link"><a href="tip-benchmarks-0.3-why3.tar.gz">tip-benchmarks-0.3-why3.tar.gz</a>
 <p>The problems converted to Why3ML. A few benchmarks do not pass Why3's termination checker.</p>
 </div>
 <h3>The repositories:</h3>
