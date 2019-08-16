@@ -51,7 +51,7 @@ variables, removal of lambdas, completion of partial functions, removal of
 annotations and a translation pass which remove the `prove` statement and
 replaces them with valid SMT-LIB syntax using push/pop.
 
-### Example: Datatypes, match-expressions and recursion
+### Datatypes, match-expressions and recursion
 
 This example specifies the commutativity of plus over natural numbers:
 
@@ -61,7 +61,7 @@ This example specifies the commutativity of plus over natural numbers:
       ((x Nat) (y Nat)) Nat
       (match x
         (((Succ n) (Succ (plus n y)))
-         (_ y))
+         (_ y))))
     (prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))
 
 The syntax should be familiar to users of SMT-LIB. Natural numbers are
@@ -76,7 +76,12 @@ TPTP, or `goal` in Why3. It is not part of SMT-LIB. If the problem uses `prove`
 only once, then `(prove p)` means the same as `(assert (not p))`. If `prove` is
 used several times, it indicates that there are several goals which must all be proved.
 
-### Example: Polymorphism
+* To convert a problem to standard SMT-LIB format, run `tip --smtlib`.
+* To replace `match` expressions with selector functions (e.g. `is-plus`), run `tip --remove-match`.
+  You can combine this with conversion to SMT-LIB format with `tip --smtlib-no-match`.
+* To convert a problem to Why3 format, run `tip --why3`.
+
+### Polymorphism
 
 TIP also supports polymorphism. Here is an example showing the right
 identity of append over polymorphic lists:
@@ -103,52 +108,57 @@ into CVC4 (@cvc4parPR). This syntax uses the syntactic form
 `(par (A) ...)` to quantify over the type variable `A`. Only rank-1
 polymorphism is supported.
 -->
-Expressions can be annotated with their type with the `as` keyword. When
-the type of a function application is not fully specified by only
-looking the types of its arguments, the problem must use `as` to specify
-the type.
 
-Polymorphism can be removed by specialising the program at some ground
-types, but this is not necessarily complete. Another method is to encode
-typing information over monomorphic terms. We plan to add techniques for
-this to the TIP toolchain. For now, provers must natively support
-polymorphism if they want to solve polymorphic problems.
+An underscore is used to instantiate a polymorphic function at a given type.
+In general, if `f` is a polymorphic function symbol having `n` type arguments,
+then `(_ f t1 ... tn)` applies `f` to the type arguments `t1 ... tn`. Explicit
+type arguments must be given whenever a function's type cannot be inferred by
+looking at the types of its arguments. In the example above, this occurs with
+`(_ nil a)`.
 
-When translating `assert-not` into `assert`, any polymorphic type
-variables are Skolemised:
+<!-- Polymorphism can be removed by specialising the program at some ground -->
+<!-- types, but this is not necessarily complete. Another method is to encode -->
+<!-- typing information over monomorphic terms. We plan to add techniques for -->
+<!-- this to the TIP toolchain. For now, provers must natively support -->
+<!-- polymorphism if they want to solve polymorphic problems. -->
 
-    (declare-sort sk :skolem 0)
-    (declare-datatype
-      list (par (a) ((nil) (cons (head a) (tail (list a))))))
-    (define-fun-rec
-      append
-      (par (a) (((xs (list a)) (ys (list a))) (list a)))
-      (match xs
-        ((nil (_ nil a))
-         ((cons x zs) (cons x (append zs ys))))))
-    (assert
-      (not (forall ((xs (list sk))) (= (append xs (_ nil sk)) xs))))
+* To eliminate polymorphism from a problem, run `tip --monomorphise`.
 
-Here is the same problem in Why3 syntax:
+<!-- When translating `assert-not` into `assert`, any polymorphic type -->
+<!-- variables are Skolemised: -->
 
-    module A
-      use HighOrd
-      use import int.Int
-      use import int.EuclideanDivision
-      use import real.RealInfix
-      use import real.FromInt
-      type list 'a = Nil2 | Cons2 'a (list 'a)
-      function append (xs : list 'a) (ys : list 'a) : list 'a =
-        match xs with
-          | Nil2 -> Nil2 : list 'a
-          | Cons2 x zs -> Cons2 x (append zs ys)
-        end
-      (* append (Nil2) ys = Nil2 : list 'a
-         append (Cons2 x zs) ys = Cons2 x (append zs ys) *)
-      goal x0 : forall xs : list 'a . (append xs (Nil2 : list 'a)) = xs
-    end
+<!--     (declare-sort sk :skolem 0) -->
+<!--     (declare-datatype -->
+<!--       list (par (a) ((nil) (cons (head a) (tail (list a)))))) -->
+<!--     (define-fun-rec -->
+<!--       append -->
+<!--       (par (a) (((xs (list a)) (ys (list a))) (list a))) -->
+<!--       (match xs -->
+<!--         ((nil (_ nil a)) -->
+<!--          ((cons x zs) (cons x (append zs ys)))))) -->
+<!--     (assert -->
+<!--       (not (forall ((xs (list sk))) (= (append xs (_ nil sk)) xs)))) -->
 
-### Example: Higher-order functions
+<!-- Here is the same problem in Why3 syntax: -->
+
+<!--     module A -->
+<!--       use HighOrd -->
+<!--       use import int.Int -->
+<!--       use import int.EuclideanDivision -->
+<!--       use import real.RealInfix -->
+<!--       use import real.FromInt -->
+<!--       type list 'a = Nil2 | Cons2 'a (list 'a) -->
+<!--       function append (xs : list 'a) (ys : list 'a) : list 'a = -->
+<!--         match xs with -->
+<!--           | Nil2 -> Nil2 : list 'a -->
+<!--           | Cons2 x zs -> Cons2 x (append zs ys) -->
+<!--         end -->
+<!--       (* append (Nil2) ys = Nil2 : list 'a -->
+<!--          append (Cons2 x zs) ys = Cons2 x (append zs ys) *) -->
+<!--       goal x0 : forall xs : list 'a . (append xs (Nil2 : list 'a)) = xs -->
+<!--     end -->
+
+### Higher-order functions
 
 This is an example property about mapping functions over lists:
 
@@ -172,13 +182,13 @@ a type `(=> a b c)`, which is different from its curried version
 `(=> a (=> b c)`. Lambdas for the first type are constructed with
 `lambda ((x a) (y b)) ...`, and for the second with
 `lambda ((x a)) (lambda ((y b)) ...)`. To apply a lambda, you explicitly
-use the `@` function, which also come at a family of types:
+use the `@` function, which also comes in a family of types:
 `((=> a b) a) b`, `((=> a b c) a b) c`, and so on.
 
-Partial application is not supported, i.e. if you have a function `f`
+Partial application is not supported, i.e. if you have a function `f`
 with type `(=> int int int)`, the application `(f 1)` is invalid, and
 should be written with an explicit lambda: `(lambda ((x int)) (f 1 x))`.
-The reason why this is important is because SMT LIB supports
+The reason why this is important is because SMT-LIB supports
 polyvariadic functions, like `and`, and `+`. For example, if (implicit)
 partial application was allowed, the expression `(+ 1 2)` could mean `3`
 or `(lambda ((x int)) (+ 1 2 x))`, or a function with higher arity.
@@ -252,7 +262,6 @@ like this:
 
 ### TODO
 
-This document does not yet cover mutual recusion (over data types or
-over functions), or partial branches and partiality.
+This document does not yet cover partial branches and partiality.
 
-### References
+<!-- ### References -->

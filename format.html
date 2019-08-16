@@ -12,17 +12,10 @@
 <h1>TIP Format</h1>
 </div>
 <div class="content">
-<p>This document contains the <a href="index.html">TIP</a> format, which is an extension of <a href="http://smt-lib.org">SMT-LIB</a> for expression inductive problems. The grammar of the format can also be viewed as <a href="bnf.html">BNF</a>.</p>
+<p>This document contains the <a href="index.html">TIP</a> format, which is an extension of <a href="http://smt-lib.org">SMT-LIB</a> for expressing inductive problems. The grammar of the format can also be viewed as <a href="bnf.html">BNF</a>.</p>
+<h3 id="scope-of-the-benchmark-suite">Scope of the benchmark suite</h3>
+<p>The benchmark suite focuses exclusively on problems that need induction over datatypes. Also, although we support higher-order functions and quantification over functions, problems that need a lot of higher-order reasoning (e.g. synthesis of functions) are probably better suited for THF.</p>
 <!--
-### Scope of the benchmark suite
-
-We want the benchmark suite to focus exclusively on problems that need
-induction. Functional programs that don't use inductive data types
-probably fit better elsewhere. Also, although we support higher-order
-functions and quantification over functions, problems that need a lot of
-higher-order reasoning (e.g. synthesis of functions) are probably better
-suited for THF.
-
 ### Criteria
 
 When designing our language extensions, we had these criteria in mind:
@@ -50,7 +43,7 @@ When designing our language extensions, we had these criteria in mind:
 <li>TIP uses a different syntax for annotations than SMT-LIB.</li>
 </ul>
 <p>The <a href="http://github.com/tip-org/tools">TIP tools</a> can convert TIP files not compatible with SMT-LIB 2.6 to valid SMT-LIB syntax (use the command <code>tip --smtlib myTIPfile.smt2</code>). This includes monomorphisation to remove type variables, removal of lambdas, completion of partial functions, removal of annotations and a translation pass which remove the <code>prove</code> statement and replaces them with valid SMT-LIB syntax using push/pop.</p>
-<h3 id="example-datatypes-match-expressions-and-recursion">Example: Datatypes, match-expressions and recursion</h3>
+<h3 id="datatypes-match-expressions-and-recursion">Datatypes, match-expressions and recursion</h3>
 <p>This example specifies the commutativity of plus over natural numbers:</p>
 <pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
 (define-fun-rec
@@ -58,54 +51,16 @@ When designing our language extensions, we had these criteria in mind:
   ((x Nat) (y Nat)) Nat
   (match x
     (((Succ n) (Succ (plus n y)))
-     (_ y))
+     (_ y))))
 (prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))</code></pre>
 <p>The syntax should be familiar to users of SMT-LIB. Natural numbers are defined with <code>declare-datatype</code>, and the function is declared using <code>define-fun-rec</code>. Both are part of the <a href="http://smtlib.cs.uiowa.edu/papers/smt-lib-reference-v2.6-r2017-07-18.pdf">SMT-LIB v2.6 standard</a>. We define <code>plus</code> rather than axiomatising it because, if the problem is from a functional program, we want to be explicit about which axioms are function definitions.</p>
-<!-- Some provers like to distinguish between axioms and conjectures, and in -->
-<!-- many inductive problems we have a distinguished conjecture. Following -->
-<!-- our principle not to throw away information from the input problem, -->
 <p>TIP has a <code>prove</code> construct which declares the goal, akin to <code>conjecture</code> in TPTP, or <code>goal</code> in Why3. It is not part of SMT-LIB. If the problem uses <code>prove</code> only once, then <code>(prove p)</code> means the same as <code>(assert (not p))</code>. If <code>prove</code> is used several times, it indicates that there are several goals which must all be proved.</p>
-<!-- means the same as `(assert (not p))`, except that it marks `p` as a goal. -->
-<!-- The `prove` construct seen above identifies the goal, and is not part of SMT-LIB. -->
-<!-- The declaration `(prove p)`  -->
-<!-- It can easily be removed by the TIP tool: XXXX how? -->
-<!--     (declare-datatype Nat ((Zero) (Succ (pred Nat)))) -->
-<!--     (define-fun-rec -->
-<!--       plus -->
-<!--       ((x Nat) (y Nat)) Nat -->
-<!--       (match x -->
-<!--         ((Zero y) -->
-<!--          ((Succ n) (Succ (plus n y)))))) -->
-<!--     (assert (not (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))) -->
-<p>The tool can also translate the example to Why3 syntax. It then looks like this:</p>
-<pre><code>module A
-  use HighOrd
-  use import int.Int
-  use import int.EuclideanDivision
-  use import real.RealInfix
-  use import real.FromInt
-  type nat = Zero | Succ (nat)
-  function plus (x : nat) (y : nat) : nat =
-    match x with
-      | Zero -&gt; y
-      | Succ n -&gt; Succ (plus n y)
-    end
-  (* plus (Zero) y = y
-     plus (Succ n) y = Succ (plus n y) *)
-  goal x0 : forall n : nat, m : nat . (plus n m) = (plus m n)
-end</code></pre>
-<!--
-
-### Complaints
-
-(Data type declarations are already parametric, but the syntax is a bit broken.
-It does not support declaring mutually recursive datatypes that differ in the amount of
-type arguments.)
-
-It is a bit broken because you have to first define all the signatures, and then the bodies.
-
--->
-<h3 id="example-polymorphism">Example: Polymorphism</h3>
+<ul>
+<li>To convert a problem to standard SMT-LIB format, run <code>tip --smtlib</code>.</li>
+<li>To replace <code>match</code> expressions with selector functions (e.g. <code>is-plus</code>), run <code>tip --remove-match</code>. You can combine this with conversion to SMT-LIB format with <code>tip --smtlib-no-match</code>.</li>
+<li>To convert a problem to Why3 format, run <code>tip --why3</code>.</li>
+</ul>
+<h3 id="polymorphism">Polymorphism</h3>
 <p>TIP also supports polymorphism. Here is an example showing the right identity of append over polymorphic lists:</p>
 <pre><code>(declare-datatype
   list (par (a) ((nil) (cons (head a) (tail (list a))))))
@@ -124,38 +79,46 @@ into CVC4 (@cvc4parPR). This syntax uses the syntactic form
 `(par (A) ...)` to quantify over the type variable `A`. Only rank-1
 polymorphism is supported.
 -->
-<p>Expressions can be annotated with their type with the <code>as</code> keyword. When the type of a function application is not fully specified by only looking the types of its arguments, the problem must use <code>as</code> to specify the type.</p>
-<p>Polymorphism can be removed by specialising the program at some ground types, but this is not necessarily complete. Another method is to encode typing information over monomorphic terms. We plan to add techniques for this to the TIP toolchain. For now, provers must natively support polymorphism if they want to solve polymorphic problems.</p>
-<p>When translating <code>assert-not</code> into <code>assert</code>, any polymorphic type variables are Skolemised:</p>
-<pre><code>(declare-sort sk :skolem 0)
-(declare-datatype
-  list (par (a) ((nil) (cons (head a) (tail (list a))))))
-(define-fun-rec
-  append
-  (par (a) (((xs (list a)) (ys (list a))) (list a)))
-  (match xs
-    ((nil (_ nil a))
-     ((cons x zs) (cons x (append zs ys))))))
-(assert
-  (not (forall ((xs (list sk))) (= (append xs (_ nil sk)) xs))))</code></pre>
-<p>Here is the same problem in Why3 syntax:</p>
-<pre><code>module A
-  use HighOrd
-  use import int.Int
-  use import int.EuclideanDivision
-  use import real.RealInfix
-  use import real.FromInt
-  type list &#39;a = Nil2 | Cons2 &#39;a (list &#39;a)
-  function append (xs : list &#39;a) (ys : list &#39;a) : list &#39;a =
-    match xs with
-      | Nil2 -&gt; Nil2 : list &#39;a
-      | Cons2 x zs -&gt; Cons2 x (append zs ys)
-    end
-  (* append (Nil2) ys = Nil2 : list &#39;a
-     append (Cons2 x zs) ys = Cons2 x (append zs ys) *)
-  goal x0 : forall xs : list &#39;a . (append xs (Nil2 : list &#39;a)) = xs
-end</code></pre>
-<h3 id="example-higher-order-functions">Example: Higher-order functions</h3>
+<p>An underscore is used to instantiate a polymorphic function at a given type. In general, if <code>f</code> is a polymorphic function symbol having <code>n</code> type arguments, then <code>(_ f t1 ... tn)</code> applies <code>f</code> to the type arguments <code>t1 ... tn</code>. Explicit type arguments must be given whenever a function’s type cannot be inferred by looking at the types of its arguments. In the example above, this occurs with <code>(_ nil a)</code>.</p>
+<!-- Polymorphism can be removed by specialising the program at some ground -->
+<!-- types, but this is not necessarily complete. Another method is to encode -->
+<!-- typing information over monomorphic terms. We plan to add techniques for -->
+<!-- this to the TIP toolchain. For now, provers must natively support -->
+<!-- polymorphism if they want to solve polymorphic problems. -->
+<ul>
+<li>To eliminate polymorphism from a problem, run <code>tip --monomorphise</code>.</li>
+</ul>
+<!-- When translating `assert-not` into `assert`, any polymorphic type -->
+<!-- variables are Skolemised: -->
+<!--     (declare-sort sk :skolem 0) -->
+<!--     (declare-datatype -->
+<!--       list (par (a) ((nil) (cons (head a) (tail (list a)))))) -->
+<!--     (define-fun-rec -->
+<!--       append -->
+<!--       (par (a) (((xs (list a)) (ys (list a))) (list a))) -->
+<!--       (match xs -->
+<!--         ((nil (_ nil a)) -->
+<!--          ((cons x zs) (cons x (append zs ys)))))) -->
+<!--     (assert -->
+<!--       (not (forall ((xs (list sk))) (= (append xs (_ nil sk)) xs)))) -->
+<!-- Here is the same problem in Why3 syntax: -->
+<!--     module A -->
+<!--       use HighOrd -->
+<!--       use import int.Int -->
+<!--       use import int.EuclideanDivision -->
+<!--       use import real.RealInfix -->
+<!--       use import real.FromInt -->
+<!--       type list 'a = Nil2 | Cons2 'a (list 'a) -->
+<!--       function append (xs : list 'a) (ys : list 'a) : list 'a = -->
+<!--         match xs with -->
+<!--           | Nil2 -> Nil2 : list 'a -->
+<!--           | Cons2 x zs -> Cons2 x (append zs ys) -->
+<!--         end -->
+<!--       (* append (Nil2) ys = Nil2 : list 'a -->
+<!--          append (Cons2 x zs) ys = Cons2 x (append zs ys) *) -->
+<!--       goal x0 : forall xs : list 'a . (append xs (Nil2 : list 'a)) = xs -->
+<!--     end -->
+<h3 id="higher-order-functions">Higher-order functions</h3>
 <p>This is an example property about mapping functions over lists:</p>
 <pre><code>(declare-datatype
   list (par (a) ((nil) (cons (head a) (tail (list a))))))
@@ -201,9 +164,26 @@ end</code></pre>
   plus
   ((x Nat) (y Nat)) Nat (ite (is-Succ x) (Succ (plus (pred x) y)) y))
 (prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))</code></pre>
+<p>The tool can also translate the example to Why3 syntax. It then looks like this:</p>
+<pre><code>module A
+  use HighOrd
+  use import int.Int
+  use import int.EuclideanDivision
+  use import real.RealInfix
+  use import real.FromInt
+  type nat = Zero | Succ (nat)
+  function plus (x : nat) (y : nat) : nat =
+    match x with
+      | Zero -&gt; y
+      | Succ n -&gt; Succ (plus n y)
+    end
+  (* plus (Zero) y = y
+     plus (Succ n) y = Succ (plus n y) *)
+  goal x0 : forall n : nat, m : nat . (plus n m) = (plus m n)
+end</code></pre>
 <h3 id="todo">TODO</h3>
-<p>This document does not yet cover mutual recusion (over data types or over functions), or partial branches and partiality.</p>
-<h3 id="references">References</h3>
+<p>This document does not yet cover partial branches and partiality.</p>
+<!-- ### References -->
 </div>
 </body>
 </html>
