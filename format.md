@@ -124,40 +124,6 @@ looking at the types of its arguments. In the example above, this occurs with
 
 * To eliminate polymorphism from a problem, run `tip --monomorphise`.
 
-<!-- When translating `assert-not` into `assert`, any polymorphic type -->
-<!-- variables are Skolemised: -->
-
-<!--     (declare-sort sk :skolem 0) -->
-<!--     (declare-datatype -->
-<!--       list (par (a) ((nil) (cons (head a) (tail (list a)))))) -->
-<!--     (define-fun-rec -->
-<!--       append -->
-<!--       (par (a) (((xs (list a)) (ys (list a))) (list a))) -->
-<!--       (match xs -->
-<!--         ((nil (_ nil a)) -->
-<!--          ((cons x zs) (cons x (append zs ys)))))) -->
-<!--     (assert -->
-<!--       (not (forall ((xs (list sk))) (= (append xs (_ nil sk)) xs)))) -->
-
-<!-- Here is the same problem in Why3 syntax: -->
-
-<!--     module A -->
-<!--       use HighOrd -->
-<!--       use import int.Int -->
-<!--       use import int.EuclideanDivision -->
-<!--       use import real.RealInfix -->
-<!--       use import real.FromInt -->
-<!--       type list 'a = Nil2 | Cons2 'a (list 'a) -->
-<!--       function append (xs : list 'a) (ys : list 'a) : list 'a = -->
-<!--         match xs with -->
-<!--           | Nil2 -> Nil2 : list 'a -->
-<!--           | Cons2 x zs -> Cons2 x (append zs ys) -->
-<!--         end -->
-<!--       (* append (Nil2) ys = Nil2 : list 'a -->
-<!--          append (Cons2 x zs) ys = Cons2 x (append zs ys) *) -->
-<!--       goal x0 : forall xs : list 'a . (append xs (Nil2 : list 'a)) = xs -->
-<!--     end -->
-
 ### Higher-order functions
 
 This is an example property about mapping functions over lists:
