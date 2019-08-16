@@ -137,33 +137,12 @@ polymorphism is supported.
 <li>To construct a value of type <code>(=&gt; a b c)</code>, write <code>lambda ((x a) (y b)) ...</code>. To apply it, write <code>(@ f x y)</code>.</li>
 <li>To construct a value of type <code>(=&gt; a (=&gt; b c))</code>, write `<code>lambda ((x a)) (lambda ((y b)) ...)</code>. To apply it, write <code>(@ (@ f x) y)</code>.</li>
 </ul>
-<h2 id="eliminating-stuff">eliminating stuff</h2>
-<p>TIP also allows the user to define their functions in a more traditional SMT-LIB syntax, using if-then-else with discriminator and projector functions (in this case <code>is-Nat</code> and <code>pred</code>). The TIP tool is able to translate between these syntaxes. Here is how the example above looks with match removed:</p>
-<pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
-(define-fun-rec
-  plus
-  ((x Nat) (y Nat)) Nat (ite (is-Succ x) (Succ (plus (pred x) y)) y))
-(prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))</code></pre>
-<p>The tool can also translate the example to Why3 syntax. It then looks like this:</p>
-<pre><code>module A
-  use HighOrd
-  use import int.Int
-  use import int.EuclideanDivision
-  use import real.RealInfix
-  use import real.FromInt
-  type nat = Zero | Succ (nat)
-  function plus (x : nat) (y : nat) : nat =
-    match x with
-      | Zero -&gt; y
-      | Succ n -&gt; Succ (plus n y)
-    end
-  (* plus (Zero) y = y
-     plus (Succ n) y = Succ (plus n y) *)
-  goal x0 : forall n : nat, m : nat . (plus n m) = (plus m n)
-end</code></pre>
+<p>That is, if you want to partially apply a function, you must either write a lambda, or define it in a curried fashion in the problem.</p>
+<ul>
+<li>To eliminate lambdas from a problem, run <code>tip --axiomatize-lambdas</code>.</li>
+</ul>
 <h3 id="todo">TODO</h3>
-<p>This document does not yet cover partial branches and partiality.</p>
-<!-- ### References -->
+<p>This document does not yet cover partial functions or annotations.</p>
 </div>
 </body>
 </html>
