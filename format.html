@@ -13,25 +13,43 @@
 </div>
 <div class="content">
 <p>This document contains the <a href="index.html">TIP</a> format, which is an extension of <a href="http://smt-lib.org">SMT-LIB</a> for expression inductive problems. The grammar of the format can also be viewed as <a href="bnf.html">BNF</a>.</p>
-<h3 id="scope-of-the-benchmark-suite">Scope of the benchmark suite</h3>
-<p>We want the benchmark suite to focus exclusively on problems that need induction. Functional programs that don’t use inductive data types probably fit better elsewhere. Also, although we support higher-order functions and quantification over functions, problems that need a lot of higher-order reasoning (e.g. synthesis of functions) are probably better suited for THF.</p>
-<h3 id="criteria">Criteria</h3>
-<p>When designing our language extensions, we had these criteria in mind:</p>
-<ol type="1">
-<li>The problem format should not look like an encoding: features such as data types and pattern matching should be supported natively rather than encoded. We should preserve as much information as possible from the input problem in case it’s useful to a prover.</li>
-<li>As far as possible, the syntax should be compatible with SMT-LIB. So we do not introduce new features just for the sake of it. We are however incompatible with SMT-LIB whenever it’s needed to avoid breaking the first criterion.</li>
-<li>The format should be accessible: easy to understand and easy for other tools to use. We have written a tool which removes some of the advanced features (such as higher-order functions) from problems to help provers that don’t support those features.</li>
-</ol>
+<!--
+### Scope of the benchmark suite
+
+We want the benchmark suite to focus exclusively on problems that need
+induction. Functional programs that don't use inductive data types
+probably fit better elsewhere. Also, although we support higher-order
+functions and quantification over functions, problems that need a lot of
+higher-order reasoning (e.g. synthesis of functions) are probably better
+suited for THF.
+
+### Criteria
+
+When designing our language extensions, we had these criteria in mind:
+
+1.  The problem format should not look like an encoding: features such
+    as data types and pattern matching should be supported natively
+    rather than encoded. We should preserve as much information as
+    possible from the input problem in case it's useful to a prover.
+2.  As far as possible, the syntax should be compatible with SMT-LIB. So
+    we do not introduce new features just for the sake of it. We are
+    however incompatible with SMT-LIB whenever it's needed to avoid
+    breaking the first criterion.
+3.  The format should be accessible: easy to understand and easy for
+    other tools to use. We have written a tool which removes some of the
+    advanced features (such as higher-order functions) from problems to
+    help provers that don't support those features.
+-->
 <h3 id="differences-between-tip-and-smt-lib-2.6">Differences between TIP and SMT-LIB 2.6</h3>
 <p>Our ambition is to keep TIP as close to SMT-LIB as possible. However, there are still a few incompatibilities:</p>
 <ul>
-<li>TIP allows polymorphism and type variables in function definitions. SMT-LIB does only allow polymorphism in datatype definitions.</li>
+<li>TIP allows polymorphism and type variables in function definitions. SMT-LIB only allows polymorphism in datatype definitions.</li>
 <li>TIP allows higher-order functions, while SMT-LIB does not.</li>
 <li>TIP allows partial functions. SMT-LIB does not.</li>
 <li>For convenience, TIP has a special command <code>prove</code> for stating a goal to prove. This allows us to state several subgoals to be proved as separate proof attempts, in one file.</li>
-<li>The same syntax for annotations as in SMT-LIB is used, but TIP allow annotations to be attached to arbitrary constructs, unlike SMT-LIB.</li>
+<li>TIP uses a different syntax for annotations than SMT-LIB.</li>
 </ul>
-<p>We provide translation tools to convert TIP files not compatible with SMT-LIB 2.6 to valid SMT-LIB syntax (use the command <code>tip --smtlib myTIPfile.smt2</code>). This includes monomorphisation to remove type variables, removal of lambdas, completion of partial functions, removal of annotations and a translation pass which remove the <code>prove</code> statement and replaces them with valid SMT-LIB syntax using push/pop.</p>
+<p>The <a href="http://github.com/tip-org/tools">TIP tools</a> can convert TIP files not compatible with SMT-LIB 2.6 to valid SMT-LIB syntax (use the command <code>tip --smtlib myTIPfile.smt2</code>). This includes monomorphisation to remove type variables, removal of lambdas, completion of partial functions, removal of annotations and a translation pass which remove the <code>prove</code> statement and replaces them with valid SMT-LIB syntax using push/pop.</p>
 <h3 id="example-datatypes-match-expressions-and-recursion">Example: Datatypes, match-expressions and recursion</h3>
 <p>This example specifies the commutativity of plus over natural numbers:</p>
 <pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
@@ -39,36 +57,26 @@
   plus
   ((x Nat) (y Nat)) Nat
   (match x
-    ((Zero y)
-     ((Succ n) (Succ (plus n y))))))
+    (((Succ n) (Succ (plus n y)))
+     (_ y))
 (prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))</code></pre>
-<p>The syntax should be familiar to users of SMT-LIB. Natural numbers are defined with <code>declare-datatypes</code>. This is not in the SMT-LIB standard, but is accepted by many SMT solvers, including Z3 and CVC4.</p>
-<p>The function is declared using <code>define-fun-rec</code> as in the <a href="http://smtlib.cs.uiowa.edu/papers/smt-lib-reference-v2.6-r2017-07-18.pdf">SMT-LIB v2.6 standard</a>. We define <code>plus</code> rather than axiomatising it because, if the problem is from a functional program, we want to be explicit about which axioms are function definitions.</p>
-<p>The <code>match</code> expression is our proposed extension for match-expressions. The first argument to match is the scrutinee, followed by a list of branches.</p>
-<p>TIP also allows the user to define their functions in a more traditional SMT-LIB syntax, using if-then-else with discriminator and projector functions (in this case <code>is-Nat</code> and <code>pred</code>). The TIP tool is able to translate between these syntaxes. Here is how the example above looks with match removed:</p>
-<pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
-(define-fun-rec
-  plus
-  ((x Nat) (y Nat)) Nat (ite (is-Succ x) (Succ (plus (pred x) y)) y))
-(prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))</code></pre>
-<p>Match expressions can also have a default branch which matches all other pattern than those explicitly listed. This is sometimes useful when there are many constructors. However, in the example above, either of the patterns <code>Zero</code> or <code>(Succ n)</code> can be replaced with the deafult symbol <code>_</code>. As an example, this is how it looks with the <code>Succ</code> case transformed:</p>
-<pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
-(define-fun-rec
-  plus
-  ((x Nat) (y Nat)) Nat
-  (match x
-    ((_ (Succ (plus (pred x) y)))
-     (Zero y))))
-(prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))</code></pre>
-<p>Some provers like to distinguish between axioms and conjectures, and in many inductive problems we have a distinguished conjecture. Following our principle not to throw away information from the input problem, TIP has a <code>prove</code> construct which identifies the goal, akin to <code>conjecture</code> in TPTP, or <code>goal</code> in Why3. The declaration <code>(prove p)</code> means the same as <code>(assert (not p))</code>, except that it marks <code>p</code> as a goal. It can easily be removed by the TIP tool:</p>
-<pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
-(define-fun-rec
-  plus
-  ((x Nat) (y Nat)) Nat
-  (match x
-    ((Zero y)
-     ((Succ n) (Succ (plus n y))))))
-(assert (not (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n)))))</code></pre>
+<p>The syntax should be familiar to users of SMT-LIB. Natural numbers are defined with <code>declare-datatype</code>, and the function is declared using <code>define-fun-rec</code>. Both are part of the <a href="http://smtlib.cs.uiowa.edu/papers/smt-lib-reference-v2.6-r2017-07-18.pdf">SMT-LIB v2.6 standard</a>. We define <code>plus</code> rather than axiomatising it because, if the problem is from a functional program, we want to be explicit about which axioms are function definitions.</p>
+<!-- Some provers like to distinguish between axioms and conjectures, and in -->
+<!-- many inductive problems we have a distinguished conjecture. Following -->
+<!-- our principle not to throw away information from the input problem, -->
+<p>TIP has a <code>prove</code> construct which declares the goal, akin to <code>conjecture</code> in TPTP, or <code>goal</code> in Why3. It is not part of SMT-LIB. If the problem uses <code>prove</code> only once, then <code>(prove p)</code> means the same as <code>(assert (not p))</code>. If <code>prove</code> is used several times, it indicates that there are several goals which must all be proved.</p>
+<!-- means the same as `(assert (not p))`, except that it marks `p` as a goal. -->
+<!-- The `prove` construct seen above identifies the goal, and is not part of SMT-LIB. -->
+<!-- The declaration `(prove p)`  -->
+<!-- It can easily be removed by the TIP tool: XXXX how? -->
+<!--     (declare-datatype Nat ((Zero) (Succ (pred Nat)))) -->
+<!--     (define-fun-rec -->
+<!--       plus -->
+<!--       ((x Nat) (y Nat)) Nat -->
+<!--       (match x -->
+<!--         ((Zero y) -->
+<!--          ((Succ n) (Succ (plus n y)))))) -->
+<!--     (assert (not (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))) -->
 <p>The tool can also translate the example to Why3 syntax. It then looks like this:</p>
 <pre><code>module A
   use HighOrd
@@ -186,6 +194,13 @@ end</code></pre>
     (forall ((f (fun1 b c)) (g (fun1 a b)) (xs (list a)))
       (= (map (lam f g) xs) (map f (map g xs))))))</code></pre>
 <p>Here, <code>=&gt;</code> with one argument is replaced with <code>fun1</code>, <code>@</code> with one argument is replaced with <code>apply1</code>. The lambda in the property has become a new function, <code>lam</code>, which closes over the free variables <code>f</code> and <code>g</code>.</p>
+<h2 id="eliminating-stuff">eliminating stuff</h2>
+<p>TIP also allows the user to define their functions in a more traditional SMT-LIB syntax, using if-then-else with discriminator and projector functions (in this case <code>is-Nat</code> and <code>pred</code>). The TIP tool is able to translate between these syntaxes. Here is how the example above looks with match removed:</p>
+<pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
+(define-fun-rec
+  plus
+  ((x Nat) (y Nat)) Nat (ite (is-Succ x) (Succ (plus (pred x) y)) y))
+(prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))</code></pre>
 <h3 id="todo">TODO</h3>
 <p>This document does not yet cover mutual recusion (over data types or over functions), or partial branches and partiality.</p>
 <h3 id="references">References</h3>
