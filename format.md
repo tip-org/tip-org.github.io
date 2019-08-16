@@ -175,93 +175,22 @@ This is an example property about mapping functions over lists:
         (forall ((f (=> b c)) (g (=> a b)) (xs (list a)))
           (= (map (lambda ((x a)) (@ f (@ g x))) xs) (map f (map g xs))))))
 
-Lambdas are introduced much like lets, with an identifier list with
-explicit types. Note that the function spaces are a family of types,
-with different arities. Thus, for some types `a`, `b` and `c`, there is
-a type `(=> a b c)`, which is different from its curried version
-`(=> a (=> b c)`. Lambdas for the first type are constructed with
-`lambda ((x a) (y b)) ...`, and for the second with
-`lambda ((x a)) (lambda ((y b)) ...)`. To apply a lambda, you explicitly
-use the `@` function, which also comes in a family of types:
-`((=> a b) a) b`, `((=> a b c) a b) c`, and so on.
+Lambdas are introduced much like lets in SMT-LIB, with an identifier list with
+explicit types. They are applied using '@'. Note that the function spaces are a
+family of types, with different arities. Thus, for some types `a`, `b` and `c`,
+there is a type `(=> a b c)`, which is different from its curried version `(=> a
+(=> b c)`:
 
-Partial application is not supported, i.e. if you have a function `f`
-with type `(=> int int int)`, the application `(f 1)` is invalid, and
-should be written with an explicit lambda: `(lambda ((x int)) (f 1 x))`.
-The reason why this is important is because SMT-LIB supports
-polyvariadic functions, like `and`, and `+`. For example, if (implicit)
-partial application was allowed, the expression `(+ 1 2)` could mean `3`
-or `(lambda ((x int)) (+ 1 2 x))`, or a function with higher arity.
+* To construct a value of type `(=> a b c)`, write `lambda ((x a) (y b)) ...`.
+  To apply it, write `(@ f x y)`.
+* To construct a value of type `(=> a (=> b c))`, write ``lambda ((x a)) (lambda ((y b)) ...)`.
+  To apply it, write `(@ (@ f x) y)`.
 
-In some cases, higher order functions can be removed with
-specialisation, like in the example above. They can always be removed by
-defunctionalisation, which is implemented in our tool chain. This pass
-transforms the above program into this:
+That is, if you want to partially apply a function, you must either write a
+lambda, or define it in a curried fashion in the problem.
 
-    (declare-sort fun1 :lambda 2)
-    (declare-datatype
-      list (par (a) ((nil) (cons (head a) (tail (list a))))))
-    (declare-fun apply1 :lambda (par (a b) (((fun1 a b) a) b)))
-    (declare-fun
-      lam :lambda (par (a b c) (((fun1 b c) (fun1 a b)) (fun1 a c))))
-    (define-fun-rec
-      map
-      (par (a b) (((f (fun1 a b)) (xs (list a))) (list b)))
-      (match xs
-        ((nil (_ nil b))
-         ((cons y ys) (cons (apply1 f y) (map f ys))))))
-    (assert
-      :definition :lambda
-      (par (a b c)
-        (forall ((f (fun1 b c)) (g (fun1 a b)) (x a))
-          (= (apply1 (lam f g) x) (apply1 f (apply1 g x))))))
-    (prove
-      (par (a b c)
-        (forall ((f (fun1 b c)) (g (fun1 a b)) (xs (list a)))
-          (= (map (lam f g) xs) (map f (map g xs))))))
-
-Here, `=>` with one argument is replaced with `fun1`, `@` with one
-argument is replaced with `apply1`. The lambda in the property has
-become a new function, `lam`, which closes over the free variables `f`
-and `g`.
-
-## eliminating stuff
-
-TIP also allows the user to define their functions in a more traditional
-SMT-LIB syntax, using if-then-else with discriminator and projector
-functions (in this case `is-Nat` and `pred`). The TIP tool is able to
-translate between these syntaxes. Here is how the example above looks
-with match removed:
-
-    (declare-datatype Nat ((Zero) (Succ (pred Nat))))
-    (define-fun-rec
-      plus
-      ((x Nat) (y Nat)) Nat (ite (is-Succ x) (Succ (plus (pred x) y)) y))
-    (prove (forall ((n Nat) (m Nat)) (= (plus n m) (plus m n))))
-
-The tool can also translate the example to Why3 syntax. It then looks
-like this:
-
-    module A
-      use HighOrd
-      use import int.Int
-      use import int.EuclideanDivision
-      use import real.RealInfix
-      use import real.FromInt
-      type nat = Zero | Succ (nat)
-      function plus (x : nat) (y : nat) : nat =
-        match x with
-          | Zero -> y
-          | Succ n -> Succ (plus n y)
-        end
-      (* plus (Zero) y = y
-         plus (Succ n) y = Succ (plus n y) *)
-      goal x0 : forall n : nat, m : nat . (plus n m) = (plus m n)
-    end
-
+* To eliminate lambdas from a problem, run `tip --axiomatize-lambdas`.
 
 ### TODO
 
-This document does not yet cover partial branches and partiality.
-
-<!-- ### References -->
+This document does not yet cover partial functions or annotations.

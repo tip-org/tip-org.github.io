@@ -132,31 +132,11 @@ polymorphism is supported.
   (par (a b c)
     (forall ((f (=&gt; b c)) (g (=&gt; a b)) (xs (list a)))
       (= (map (lambda ((x a)) (@ f (@ g x))) xs) (map f (map g xs))))))</code></pre>
-<p>Lambdas are introduced much like lets, with an identifier list with explicit types. Note that the function spaces are a family of types, with different arities. Thus, for some types <code>a</code>, <code>b</code> and <code>c</code>, there is a type <code>(=&gt; a b c)</code>, which is different from its curried version <code>(=&gt; a (=&gt; b c)</code>. Lambdas for the first type are constructed with <code>lambda ((x a) (y b)) ...</code>, and for the second with <code>lambda ((x a)) (lambda ((y b)) ...)</code>. To apply a lambda, you explicitly use the <code>@</code> function, which also come at a family of types: <code>((=&gt; a b) a) b</code>, <code>((=&gt; a b c) a b) c</code>, and so on.</p>
-<p>Partial application is not supported, i.e. if you have a function <code>f</code> with type <code>(=&gt; int int int)</code>, the application <code>(f 1)</code> is invalid, and should be written with an explicit lambda: <code>(lambda ((x int)) (f 1 x))</code>. The reason why this is important is because SMT LIB supports polyvariadic functions, like <code>and</code>, and <code>+</code>. For example, if (implicit) partial application was allowed, the expression <code>(+ 1 2)</code> could mean <code>3</code> or <code>(lambda ((x int)) (+ 1 2 x))</code>, or a function with higher arity.</p>
-<p>In some cases, higher order functions can be removed with specialisation, like in the example above. They can always be removed by defunctionalisation, which is implemented in our tool chain. This pass transforms the above program into this:</p>
-<pre><code>(declare-sort fun1 :lambda 2)
-(declare-datatype
-  list (par (a) ((nil) (cons (head a) (tail (list a))))))
-(declare-fun apply1 :lambda (par (a b) (((fun1 a b) a) b)))
-(declare-fun
-  lam :lambda (par (a b c) (((fun1 b c) (fun1 a b)) (fun1 a c))))
-(define-fun-rec
-  map
-  (par (a b) (((f (fun1 a b)) (xs (list a))) (list b)))
-  (match xs
-    ((nil (_ nil b))
-     ((cons y ys) (cons (apply1 f y) (map f ys))))))
-(assert
-  :definition :lambda
-  (par (a b c)
-    (forall ((f (fun1 b c)) (g (fun1 a b)) (x a))
-      (= (apply1 (lam f g) x) (apply1 f (apply1 g x))))))
-(prove
-  (par (a b c)
-    (forall ((f (fun1 b c)) (g (fun1 a b)) (xs (list a)))
-      (= (map (lam f g) xs) (map f (map g xs))))))</code></pre>
-<p>Here, <code>=&gt;</code> with one argument is replaced with <code>fun1</code>, <code>@</code> with one argument is replaced with <code>apply1</code>. The lambda in the property has become a new function, <code>lam</code>, which closes over the free variables <code>f</code> and <code>g</code>.</p>
+<p>Lambdas are introduced much like lets in SMT-LIB, with an identifier list with explicit types. They are applied using ‘@’. Note that the function spaces are a family of types, with different arities. Thus, for some types <code>a</code>, <code>b</code> and <code>c</code>, there is a type <code>(=&gt; a b c)</code>, which is different from its curried version <code>(=&gt; a (=&gt; b c)</code>:</p>
+<ul>
+<li>To construct a value of type <code>(=&gt; a b c)</code>, write <code>lambda ((x a) (y b)) ...</code>. To apply it, write <code>(@ f x y)</code>.</li>
+<li>To construct a value of type <code>(=&gt; a (=&gt; b c))</code>, write `<code>lambda ((x a)) (lambda ((y b)) ...)</code>. To apply it, write <code>(@ (@ f x) y)</code>.</li>
+</ul>
 <h2 id="eliminating-stuff">eliminating stuff</h2>
 <p>TIP also allows the user to define their functions in a more traditional SMT-LIB syntax, using if-then-else with discriminator and projector functions (in this case <code>is-Nat</code> and <code>pred</code>). The TIP tool is able to translate between these syntaxes. Here is how the example above looks with match removed:</p>
 <pre><code>(declare-datatype Nat ((Zero) (Succ (pred Nat))))
