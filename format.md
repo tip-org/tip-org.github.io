@@ -1,20 +1,18 @@
 % TIP Format
 
 This document contains the [TIP](index.html) format, which is an
-extension of [SMT-LIB](http://smt-lib.org) for expression inductive
+extension of [SMT-LIB](http://smt-lib.org) for expressing inductive
 problems. The grammar of the format can also be viewed as
 [BNF](bnf.html).
 
-
 ### Scope of the benchmark suite
 
-We want the benchmark suite to focus exclusively on problems that need
-induction. Functional programs that don't use inductive data types
-probably fit better elsewhere. Also, although we support higher-order
-functions and quantification over functions, problems that need a lot of
-higher-order reasoning (e.g. synthesis of functions) are probably better
-suited for THF.
+The benchmark suite focuses exclusively on problems that need induction over
+datatypes. Also, although we support higher-order functions and quantification
+over functions, problems that need a lot of higher-order reasoning
+(e.g. synthesis of functions) are probably better suited for THF.
 
+<!--
 ### Criteria
 
 When designing our language extensions, we had these criteria in mind:
@@ -31,6 +29,7 @@ When designing our language extensions, we had these criteria in mind:
     other tools to use. We have written a tool which removes some of the
     advanced features (such as higher-order functions) from problems to
     help provers that don't support those features.
+-->
 
 ### Differences between TIP and SMT-LIB 2.6
 Our ambition is to keep TIP as close to SMT-LIB as possible.
